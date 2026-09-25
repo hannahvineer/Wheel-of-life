@@ -1455,10 +1455,13 @@
   },
   "files": {
     "R/wheel.R": {
-      "checksum": "a6215c2b7533ce02e524d4f5cdcbcfe5"
+      "checksum": "4cd12c10c335b57b7e3a895fd9a530a7"
+    },
+    "README.md": {
+      "checksum": "72b26b92ef336ff75d1afade39e8b186"
     },
     "app.R": {
-      "checksum": "f7f4e07f46cb782ad395d15507d62b45"
+      "checksum": "edfa87b9fa795f643f4a5a54ae42a606"
     }
   },
   "users": null

@@ -6,20 +6,34 @@ library(ggplot2)
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
-default_domains <- c(
-  "Physical Health",
-  "Mental & Emotional Wellbeing",
-  "Career",
-  "Finances",
-  "Romance & Partner",
-  "Family",
-  "Friends & Social Life",
-  "Personal Growth & Learning",
-  "Fun & Recreation",
-  "Home & Environment",
-  "Spirituality & Purpose",
-  "Community & Contribution"
+preset_domains <- list(
+  life = c(
+    "Physical Health",
+    "Mental & Emotional Wellbeing",
+    "Career",
+    "Finances",
+    "Romance & Partner",
+    "Family",
+    "Friends & Social Life",
+    "Personal Growth & Learning",
+    "Fun & Recreation",
+    "Home & Environment",
+    "Spirituality & Purpose",
+    "Community & Contribution"
+  ),
+  career = c(
+    "Pay & Benefits",
+    "Career Progression",
+    "Skills & Development",
+    "Meaning & Purpose",
+    "Challenge & Stimulation",
+    "Recognition & Feedback",
+    "Working Relationships",
+    "Work-Life Balance & Flexibility"
+  )
 )
+
+preset_titles <- c(life = "My Wheel of Life", career = "My Career Wheel")
 
 # One distinct colour per domain.
 domain_colours <- function(n) {

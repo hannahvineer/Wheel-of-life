@@ -2,34 +2,42 @@ library(shiny)
 library(bslib)
 library(ggplot2)
 
-# plot_wheel() and default_domains live in R/wheel.R (auto-sourced by Shiny).
+# plot_wheel(), preset_domains and preset_titles live in R/wheel.R
+# (auto-sourced by Shiny).
 
 ui <- page_sidebar(
   title = "Wheel of Life",
   theme = bs_theme(bootswatch = "flatly"),
   sidebar = sidebar(
-    width = 340,
+    width = 380,
     h5("1. Set up your wheel"),
     radioButtons(
       "domain_mode", NULL,
-      choices = c("Use the standard 12 areas" = "default",
+      choices = c("Whole life (12 areas)" = "life",
+                  "Career & work (8 areas)" = "career",
                   "Choose my own areas" = "custom")
     ),
     conditionalPanel(
       "input.domain_mode == 'custom'",
       textAreaInput(
-        "custom_domains", "One life area per line",
-        value = paste(default_domains, collapse = "\n"),
+        "custom_domains", "One area per line",
+        value = paste(preset_domains$life, collapse = "\n"),
         rows = 12, resize = "vertical"
       ),
-      helpText("Add, remove, rename or reorder lines. Minimum 3 areas.")
+      helpText("Starts from the last preset you picked. Add, remove, rename",
+               "or reorder lines. Minimum 3 areas.")
     ),
     actionButton("build", "Build my wheel", class = "btn-primary"),
     hr(),
     h5("2. Rate each area (0-10)"),
-    helpText("Solid colour = how satisfied you are now.",
-             "Translucent colour with dashed outline = how satisfied you",
-             "would like to be."),
+    helpText("Now = how satisfied you are today (solid colour).",
+             "Want = how satisfied you would like to be (translucent",
+             "colour with dashed outline)."),
+    tags$style(HTML("
+      #rating_inputs td { vertical-align: middle; }
+      #rating_inputs .form-group { margin-bottom: 0; }
+      #rating_inputs input { width: 64px; padding: 2px 6px; text-align: center; }
+    ")),
     uiOutput("rating_inputs")
   ),
   card(
@@ -49,12 +57,21 @@ ui <- page_sidebar(
 server <- function(input, output, session) {
 
   parse_domains <- function() {
-    if (input$domain_mode == "default") return(default_domains)
+    if (input$domain_mode != "custom") return(preset_domains[[input$domain_mode]])
     d <- trimws(strsplit(input$custom_domains, "\n", fixed = TRUE)[[1]])
     unique(d[nzchar(d)])
   }
 
-  domains <- reactiveVal(default_domains)
+  # Seed the custom list from the most recently chosen preset.
+  observeEvent(input$domain_mode, {
+    if (input$domain_mode != "custom") {
+      updateTextAreaInput(session, "custom_domains",
+                          value = paste(preset_domains[[input$domain_mode]],
+                                        collapse = "\n"))
+    }
+  })
+
+  domains <- reactiveVal(preset_domains$life)
 
   # Remember ratings by domain name so they survive rebuilding the wheel.
   saved <- reactiveValues(current = list(), desired = list())
@@ -73,30 +90,50 @@ server <- function(input, output, session) {
       if (!is.null(des)) saved$desired[[old[i]]] <- des
     }
     domains(d)
+    # Swap the title between presets unless the user has typed their own.
+    if (input$domain_mode != "custom" && input$title %in% preset_titles) {
+      updateTextInput(session, "title", value = preset_titles[[input$domain_mode]])
+    }
   })
 
   output$rating_inputs <- renderUI({
     d <- domains()
-    lapply(seq_along(d), function(i) {
-      cur <- isolate(saved$current[[d[i]]]) %||% 5
-      des <- isolate(saved$desired[[d[i]]]) %||% 8
-      div(
-        class = "mb-3 pb-2 border-bottom",
-        strong(d[i]),
-        sliderInput(paste0("cur_", i), "Current", min = 0, max = 10,
-                    value = cur, step = 1, ticks = FALSE, width = "100%"),
-        sliderInput(paste0("des_", i), "Desired", min = 0, max = 10,
-                    value = des, step = 1, ticks = FALSE, width = "100%")
+    rating_input <- function(id, value) {
+      numericInput(id, NULL, value = value, min = 0, max = 10, step = 1)
+    }
+    rows <- lapply(seq_along(d), function(i) {
+      tags$tr(
+        tags$td(d[i]),
+        tags$td(rating_input(paste0("cur_", i), isolate(saved$current[[d[i]]]) %||% 5)),
+        tags$td(rating_input(paste0("des_", i), isolate(saved$desired[[d[i]]]) %||% 8))
       )
     })
+    tags$table(
+      class = "table table-sm",
+      tags$thead(tags$tr(tags$th("Area"), tags$th("Now"), tags$th("Want"))),
+      tags$tbody(rows)
+    )
+  })
+
+  # Snap typed values back into whole numbers from 0 to 10.
+  observe({
+    ids <- paste0(rep(c("cur_", "des_"), each = length(domains())), seq_along(domains()))
+    for (id in ids) {
+      v <- input[[id]]
+      if (!is.null(v) && !is.na(v) && (v < 0 || v > 10 || v != round(v))) {
+        updateNumericInput(session, id, value = min(max(round(v), 0), 10))
+      }
+    }
   })
 
   ratings <- reactive({
     d <- domains()
     cur <- vapply(seq_along(d), function(i) input[[paste0("cur_", i)]] %||% NA_real_, numeric(1))
     des <- vapply(seq_along(d), function(i) input[[paste0("des_", i)]] %||% NA_real_, numeric(1))
-    req(!anyNA(cur), !anyNA(des))
-    data.frame(domain = d, current = cur, desired = des)
+    # Keep the last wheel on screen while a box is briefly empty mid-edit.
+    req(!anyNA(cur), !anyNA(des), cancelOutput = TRUE)
+    clamp <- function(x) pmin(pmax(round(x), 0), 10)
+    data.frame(domain = d, current = clamp(cur), desired = clamp(des))
   })
 
   wheel_plot <- reactive(plot_wheel(ratings(), title = input$title))

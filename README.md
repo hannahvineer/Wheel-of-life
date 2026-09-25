@@ -2,13 +2,19 @@
 
 A Shiny app for building and scoring a personal Wheel of Life.
 
-1. **Set up the wheel**: use the standard 12 life areas, or enter your own (one per line, minimum 3).
-2. **Rate each area from 0 to 10**: set how satisfied you are now (*current*) and how satisfied you want to be (*desired*).
+1. **Set up the wheel**: pick a preset (whole life or career & work), or enter your own areas (one per line, minimum 3).
+2. **Rate each area from 0 to 10** in the table: how satisfied you are now and how satisfied you want to be.
 3. **Read the wheel**: current scores are solid colour. Desired scores are translucent with a dashed outline. Download the wheel as a PNG, or the scores as a CSV.
 
-Default areas: Physical Health, Mental & Emotional Wellbeing, Career, Finances,
-Romance & Partner, Family, Friends & Social Life, Personal Growth & Learning,
-Fun & Recreation, Home & Environment, Spirituality & Purpose, Community & Contribution.
+Preset area lists:
+
+- **Whole life (12):** Physical Health, Mental & Emotional Wellbeing, Career,
+  Finances, Romance & Partner, Family, Friends & Social Life, Personal Growth &
+  Learning, Fun & Recreation, Home & Environment, Spirituality & Purpose,
+  Community & Contribution.
+- **Career & work (8):** Pay & Benefits, Career Progression, Skills &
+  Development, Meaning & Purpose, Challenge & Stimulation, Recognition &
+  Feedback, Working Relationships, Work-Life Balance & Flexibility.
 
 ## Running
 
@@ -21,6 +27,6 @@ The plotting code is in `R/wheel.R`. You can also use it outside Shiny:
 
 ```r
 source("R/wheel.R")
-scores <- data.frame(domain = default_domains, current = 5, desired = 8)
+scores <- data.frame(domain = preset_domains$career, current = 5, desired = 8)
 plot_wheel(scores)
 ```

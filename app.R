@@ -5,6 +5,9 @@ library(ggplot2)
 # plot_wheel(), preset_domains and preset_titles live in R/wheel.R
 # (auto-sourced by Shiny).
 
+credit <- "Developed by Hannah Vineer with Claude Code"
+linkedin_url <- "https://www.linkedin.com/in/hannahvineer"
+
 ui <- page_sidebar(
   title = "Life Audit tool",
   theme = bs_theme(bootswatch = "flatly"),
@@ -54,9 +57,9 @@ ui <- page_sidebar(
   ),
   tags$footer(
     class = "text-muted small text-center",
-    "Developed by Hannah Vineer - ",
+    paste(credit, "- "),
     tags$a(
-      href = "https://www.linkedin.com/in/hannahvineer",
+      href = linkedin_url,
       target = "_blank", rel = "noopener",
       class = "text-decoration-none",
       icon("linkedin", style = "color: #0A66C2;"),
@@ -154,7 +157,10 @@ server <- function(input, output, session) {
   output$download_png <- downloadHandler(
     filename = function() paste0("wheel-of-life-", Sys.Date(), ".png"),
     content = function(file) {
-      ggsave(file, wheel_plot(), width = 9, height = 9, dpi = 200, bg = "white")
+      p <- wheel_plot() +
+        labs(caption = paste(credit, "-", sub("^https://www\\.", "", linkedin_url))) +
+        theme(plot.caption = element_text(hjust = 0.5, colour = "grey45", size = 9))
+      ggsave(file, p, width = 9, height = 9, dpi = 200, bg = "white")
     }
   )
 

@@ -51,6 +51,17 @@ ui <- page_sidebar(
       )
     ),
     plotOutput("wheel", height = "650px")
+  ),
+  tags$footer(
+    class = "text-muted small text-center",
+    "Developed by Hannah Vineer - ",
+    tags$a(
+      href = "https://www.linkedin.com/in/hannahvineer",
+      target = "_blank", rel = "noopener",
+      class = "text-decoration-none",
+      icon("linkedin", style = "color: #0A66C2;"),
+      "linkedin.com/in/hannahvineer"
+    )
   )
 )
 

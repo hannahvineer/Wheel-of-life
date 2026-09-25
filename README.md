@@ -1,6 +1,6 @@
-# Wheel of Life
+# Life Audit tool
 
-A Shiny app for building and scoring a personal Wheel of Life.
+A Shiny app for building and scoring a personal Life Audit or Career Audit wheel.
 
 1. **Set up the wheel**: pick a preset (whole life or career & work), or enter your own areas (one per line, minimum 3).
 2. **Rate each area from 0 to 10** in the table: how satisfied you are now and how satisfied you want to be.

@@ -12,6 +12,7 @@ ui <- page_sidebar(
   title = "Life Audit tool",
   theme = bs_theme(bootswatch = "flatly"),
   sidebar = sidebar(
+    id = "setup",
     width = 380,
     h5("1. Set up your wheel"),
     radioButtons(
@@ -45,7 +46,18 @@ ui <- page_sidebar(
         .card-body { padding: 4px; }
       }
     ")),
-    uiOutput("rating_inputs")
+    uiOutput("rating_inputs"),
+    # Phones only: the sidebar covers the wheel, so offer a way back.
+    actionButton("show_wheel", "Show my wheel", icon = icon("chart-pie"),
+                 class = "btn-primary w-100 d-sm-none")
+  ),
+  div(
+    p(class = "small mb-2",
+      "Score each area of your life from 0 to 10: how satisfied you are now,",
+      "and how satisfied you would like to be. The gaps show where to focus."),
+    # Phones only: the sidebar starts closed, so point people to it.
+    actionButton("open_setup", "Set up and score my wheel", icon = icon("sliders"),
+                 class = "btn-primary w-100 d-sm-none")
   ),
   card(
     full_screen = TRUE,
@@ -130,6 +142,9 @@ server <- function(input, output, session) {
       tags$tbody(rows)
     )
   })
+
+  observeEvent(input$open_setup, toggle_sidebar("setup", open = TRUE))
+  observeEvent(input$show_wheel, toggle_sidebar("setup", open = FALSE))
 
   # The sidebar starts collapsed on phones; build the table anyway so the
   # wheel can draw straight away.

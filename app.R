@@ -6,7 +6,7 @@ library(ggplot2)
 # (auto-sourced by Shiny).
 
 ui <- page_sidebar(
-  title = "Wheel of Life",
+  title = "Life Audit tool",
   theme = bs_theme(bootswatch = "flatly"),
   sidebar = sidebar(
     width = 380,
@@ -44,7 +44,7 @@ ui <- page_sidebar(
     full_screen = TRUE,
     card_header(
       class = "d-flex justify-content-between align-items-center",
-      textInput("title", NULL, value = "My Wheel of Life", width = "300px"),
+      textInput("title", NULL, value = "Life Audit", width = "300px"),
       div(
         downloadButton("download_png", "PNG", class = "btn-sm btn-outline-primary"),
         downloadButton("download_csv", "CSV", class = "btn-sm btn-outline-primary")

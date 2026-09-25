@@ -33,7 +33,7 @@ preset_domains <- list(
   )
 )
 
-preset_titles <- c(life = "My Wheel of Life", career = "My Career Wheel")
+preset_titles <- c(life = "Life Audit", career = "Career Audit")
 
 # One distinct colour per domain.
 domain_colours <- function(n) {
@@ -41,7 +41,7 @@ domain_colours <- function(n) {
 }
 
 # data: data.frame with columns domain, current, desired (0-10).
-plot_wheel <- function(data, title = "My Wheel of Life", wrap_width = 14) {
+plot_wheel <- function(data, title = "Life Audit", wrap_width = 14) {
   n <- nrow(data)
   data$domain <- factor(data$domain, levels = data$domain)
   labels <- vapply(levels(data$domain),

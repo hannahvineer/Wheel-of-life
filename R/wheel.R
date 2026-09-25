@@ -41,7 +41,8 @@ domain_colours <- function(n) {
 }
 
 # data: data.frame with columns domain, current, desired (0-10).
-plot_wheel <- function(data, title = "Life Audit", wrap_width = 14) {
+# text_scale shrinks all text, e.g. for small screens.
+plot_wheel <- function(data, title = "Life Audit", wrap_width = 14, text_scale = 1) {
   n <- nrow(data)
   data$domain <- factor(data$domain, levels = data$domain)
   labels <- vapply(levels(data$domain),
@@ -66,7 +67,8 @@ plot_wheel <- function(data, title = "Life Audit", wrap_width = 14) {
     geom_vline(xintercept = seq(0.5, n + 0.5, by = 1),
                colour = "grey70", linewidth = 0.3) +
     annotate("label", x = 0.5, y = seq(2, 10, by = 2), label = seq(2, 10, by = 2),
-             size = 3, colour = "grey40", label.size = 0, fill = "white", alpha = 0.8) +
+             size = 3 * text_scale, colour = "grey40", label.size = 0, fill = "white",
+             alpha = 0.8, label.padding = unit(0.2 * text_scale, "lines")) +
     scale_y_continuous(limits = c(0, 10), breaks = 0:10, expand = c(0, 0)) +
     scale_x_discrete(labels = labels) +
     scale_fill_manual(values = domain_colours(n), guide = "none") +
@@ -79,14 +81,15 @@ plot_wheel <- function(data, title = "Life Audit", wrap_width = 14) {
     guides(alpha = guide_legend(override.aes = list(fill = "grey30", colour = NA))) +
     coord_polar(clip = "off") +
     labs(title = title, x = NULL, y = NULL) +
-    theme_minimal(base_size = 13) +
+    theme_minimal(base_size = 13 * text_scale) +
     theme(
       panel.grid.major.x = element_blank(),
       panel.grid.major.y = element_line(colour = "grey85"),
       panel.grid.minor = element_blank(),
       axis.text.y = element_blank(),
-      axis.text.x = element_text(face = "bold", size = 11),
+      axis.text.x = element_text(face = "bold", size = 11 * text_scale),
       legend.position = "bottom",
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 18)
+      legend.key.size = unit(1.2 * text_scale, "lines"),
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 18 * text_scale)
     )
 }

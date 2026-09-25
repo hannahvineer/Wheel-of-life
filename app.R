@@ -12,6 +12,7 @@ ui <- page_sidebar(
   title = "Life Audit tool",
   theme = bs_theme(bootswatch = "flatly"),
   sidebar = sidebar(
+    id = "setup",
     width = 380,
     h5("1. Set up your wheel"),
     radioButtons(
@@ -28,9 +29,9 @@ ui <- page_sidebar(
         rows = 12, resize = "vertical"
       ),
       helpText("Starts from the last preset you picked. Add, remove, rename",
-               "or reorder lines. Minimum 3 areas.")
+               "or reorder lines. Minimum 3 areas."),
+      actionButton("apply_custom", "Build my wheel", class = "btn-primary")
     ),
-    actionButton("build", "Build my wheel", class = "btn-primary"),
     hr(),
     h5("2. Rate each area (0-10)"),
     helpText("Now = how satisfied you are today (solid colour).",
@@ -40,8 +41,23 @@ ui <- page_sidebar(
       #rating_inputs td { vertical-align: middle; }
       #rating_inputs .form-group { margin-bottom: 0; }
       #rating_inputs input { width: 64px; padding: 2px 6px; text-align: center; }
+      @media (max-width: 576px) {
+        .bslib-page-main { padding: 8px; }
+        .card-body { padding: 4px; }
+      }
     ")),
-    uiOutput("rating_inputs")
+    uiOutput("rating_inputs"),
+    # Phones only: the sidebar covers the wheel, so offer a way back.
+    actionButton("show_wheel", "Show my wheel", icon = icon("chart-pie"),
+                 class = "btn-primary w-100 d-sm-none")
+  ),
+  div(
+    p(class = "small mb-2",
+      "Score each area of your life from 0 to 10: how satisfied you are now,",
+      "and how satisfied you would like to be. The gaps show where to focus."),
+    # Phones only: the sidebar starts closed, so point people to it.
+    actionButton("open_setup", "Set up and score my wheel", icon = icon("sliders"),
+                 class = "btn-primary w-100 d-sm-none")
   ),
   card(
     full_screen = TRUE,
@@ -53,7 +69,7 @@ ui <- page_sidebar(
         downloadButton("download_csv", "CSV", class = "btn-sm btn-outline-primary")
       )
     ),
-    plotOutput("wheel", height = "650px")
+    plotOutput("wheel", height = "auto")
   ),
   tags$footer(
     class = "text-muted small text-center",
@@ -70,33 +86,17 @@ ui <- page_sidebar(
 
 server <- function(input, output, session) {
 
-  parse_domains <- function() {
-    if (input$domain_mode != "custom") return(preset_domains[[input$domain_mode]])
-    d <- trimws(strsplit(input$custom_domains, "\n", fixed = TRUE)[[1]])
-    unique(d[nzchar(d)])
-  }
-
-  # Seed the custom list from the most recently chosen preset.
-  observeEvent(input$domain_mode, {
-    if (input$domain_mode != "custom") {
-      updateTextAreaInput(session, "custom_domains",
-                          value = paste(preset_domains[[input$domain_mode]],
-                                        collapse = "\n"))
-    }
-  })
-
   domains <- reactiveVal(preset_domains$life)
 
   # Remember ratings by domain name so they survive rebuilding the wheel.
   saved <- reactiveValues(current = list(), desired = list())
 
-  observeEvent(input$build, {
-    d <- parse_domains()
+  apply_domains <- function(d) {
     if (length(d) < 3) {
-      showNotification("Please enter at least 3 life areas.", type = "error")
+      showNotification("Please enter at least 3 areas.", type = "error")
       return()
     }
-    old <- isolate(domains())
+    old <- domains()
     for (i in seq_along(old)) {
       cur <- input[[paste0("cur_", i)]]
       des <- input[[paste0("des_", i)]]
@@ -104,10 +104,24 @@ server <- function(input, output, session) {
       if (!is.null(des)) saved$desired[[old[i]]] <- des
     }
     domains(d)
+  }
+
+  # Presets apply as soon as they are picked; they also seed the custom list.
+  observeEvent(input$domain_mode, {
+    mode <- input$domain_mode
+    if (mode == "custom") return()
+    updateTextAreaInput(session, "custom_domains",
+                        value = paste(preset_domains[[mode]], collapse = "\n"))
+    apply_domains(preset_domains[[mode]])
     # Swap the title between presets unless the user has typed their own.
-    if (input$domain_mode != "custom" && input$title %in% preset_titles) {
-      updateTextInput(session, "title", value = preset_titles[[input$domain_mode]])
+    if (input$title %in% preset_titles) {
+      updateTextInput(session, "title", value = preset_titles[[mode]])
     }
+  }, ignoreInit = TRUE)
+
+  observeEvent(input$apply_custom, {
+    d <- trimws(strsplit(input$custom_domains, "\n", fixed = TRUE)[[1]])
+    apply_domains(unique(d[nzchar(d)]))
   })
 
   output$rating_inputs <- renderUI({
@@ -128,6 +142,13 @@ server <- function(input, output, session) {
       tags$tbody(rows)
     )
   })
+
+  observeEvent(input$open_setup, toggle_sidebar("setup", open = TRUE))
+  observeEvent(input$show_wheel, toggle_sidebar("setup", open = FALSE))
+
+  # The sidebar starts collapsed on phones; build the table anyway so the
+  # wheel can draw straight away.
+  outputOptions(output, "rating_inputs", suspendWhenHidden = FALSE)
 
   # Snap typed values back into whole numbers from 0 to 10.
   observe({
@@ -150,14 +171,20 @@ server <- function(input, output, session) {
     data.frame(domain = d, current = clamp(cur), desired = clamp(des))
   })
 
-  wheel_plot <- reactive(plot_wheel(ratings(), title = input$title))
+  wheel_width <- reactive(session$clientData$output_wheel_width %||% 700)
 
-  output$wheel <- renderPlot(wheel_plot(), res = 96)
+  # Keep the wheel square and shrink its text on narrow screens.
+  output$wheel <- renderPlot(
+    plot_wheel(ratings(), title = input$title,
+               text_scale = min(max(wheel_width() / 700, 0.45), 1)),
+    height = function() min(wheel_width(), 700),
+    res = 96
+  )
 
   output$download_png <- downloadHandler(
     filename = function() paste0("wheel-of-life-", Sys.Date(), ".png"),
     content = function(file) {
-      p <- wheel_plot() +
+      p <- plot_wheel(ratings(), title = input$title) +
         labs(caption = paste(credit, "-", sub("^https://www\\.", "", linkedin_url))) +
         theme(plot.caption = element_text(hjust = 0.5, colour = "grey45", size = 9))
       ggsave(file, p, width = 9, height = 9, dpi = 200, bg = "white")
